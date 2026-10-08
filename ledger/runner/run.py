@@ -32,6 +32,11 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+def make_client(name: str, config: Config, cache: DiskCache, guard: BudgetGuard) -> CachedClient:
+    """Cache outermost (hits cost nothing and skip the guard), then the budget guard, then the provider."""
+    return CachedClient(GuardedClient(build_client(name, config), guard, config.models[name].price_per_mtok), cache)
+
+
 def run_file(run_dir: Path, task_id: str, model: str, seed: int) -> Path:
     return run_dir / "trajectories" / f"{task_id}__{model}__s{seed}.json"
 
@@ -73,13 +78,8 @@ async def run_all(config: Config, model_names: list[str], tasks: list[Task], see
     (run_dir / "trajectories").mkdir(parents=True, exist_ok=True)
     cache = DiskCache(cache_dir)
     guard = BudgetGuard(runs_dir / "spend.json", config.run.budget_usd)
-
-    def client(name: str) -> CachedClient:  # cache outermost: hits cost nothing and skip the guard
-        return CachedClient(GuardedClient(build_client(name, config), guard, config.models[name].price_per_mtok),
-                            cache)
-
-    agents = {m: client(m) for m in model_names}
-    judge = client(judge_name)
+    agents = {m: make_client(m, config, cache, guard) for m in model_names}
+    judge = make_client(judge_name, config, cache, guard)
     write_manifest(run_dir, run_name, config, agents, judge, tasks, seeds)
 
     jobs = [(t, m, s) for t in tasks for m in model_names for s in range(seeds)]

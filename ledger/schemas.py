@@ -74,3 +74,4 @@ class Trajectory(BaseModel):
     final_db: dict[str, list[dict[str, Any]]]  # tables touched by successful tool calls
     usage: Usage = Field(default_factory=Usage)
     grade: Grade | None = None
+    previous_grades: list[Grade] = Field(default_factory=list)  # kept when a run is re-graded

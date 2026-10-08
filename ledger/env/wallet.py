@@ -60,6 +60,21 @@ class Wallet:
     def from_file(cls, path: str | Path, now: str = "2026-09-15T12:00:00") -> Wallet:
         return cls(json.loads(Path(path).read_text()), now=now)
 
+    @classmethod
+    def replay(cls, path: str | Path, action_log: list[ActionRecord], now: str,
+               expected: dict[str, list[dict[str, Any]]] | None = None) -> Wallet:
+        """Rebuild a run's final DB by re-applying its successful calls (new ids are deterministic).
+
+        If `expected` (a trajectory's final_db snapshot) is given, the replayed tables must match it exactly.
+        """
+        wallet = cls.from_file(path, now=now)
+        for rec in action_log:
+            if rec.ok and not wallet.call(rec.tool, rec.args, rec.step).ok:
+                raise ValueError(f"replay diverged at step {rec.step}: {rec.tool}({rec.args})")
+        if expected is not None and wallet.snapshot(set(expected)) != expected:
+            raise ValueError("replayed DB does not match the trajectory's final_db snapshot")
+        return wallet
+
     def _load(self, fixture: dict[str, list[dict[str, Any]]]) -> None:
         unknown = set(fixture) - set(TABLES)
         if unknown:

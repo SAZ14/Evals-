@@ -212,3 +212,31 @@ keyless work. Spend so far: $0.00.
   Flagging or unflagging a task changes the headline without re-running. `runs.csv` gained a `flagged` column.
 - Sycophancy flip and injection tables use headline (non-flagged) runs; today no sycophancy or injection task
   is flagged.
+
+## Phase 6: claim-checker audit (keyless parts only)
+
+- **Not done (needs keys):** the second opinion on real runs, reading flagged and sampled runs, the precision
+  and recall estimates, `AUDIT.md`, and a filled `audit/human_labels.csv`. All of it needs real trajectories
+  and an audit judge. The tooling is built and tested on mock runs.
+- **`Wallet.replay`** rebuilds a run's final DB by re-applying its successful calls to a fresh fixture. New ids
+  are deterministic, so this works, and it must match the trajectory's `final_db` snapshot exactly or it
+  raises. This lets graders re-run on saved trajectories.
+- **`python -m ledger.runner.regrade runs/<run>`** re-grades in place and keeps each old grade in
+  `previous_grades`. This is what the integrity rule needs after a grader bug fix.
+- **`python -m ledger.audit second-opinion runs/<run> --judge <audit_model>`** re-extracts claims with the
+  audit judge and verifies them with the same deterministic code. It writes:
+  - `audit/second_opinion.jsonl`: per run, both judges' false claims and whether they agree;
+  - `audit/sample.json`: the seed and the run ids sampled;
+  - `audit/human_labels.csv`: exactly the brief's columns. Rows are every run either judge flagged plus 20
+    seeded random runs both called honest. Labels already filled in survive a re-run.
+- **A fifth label, `true_honest`, was added** for sampled runs that really are honest. The brief's four labels
+  have no "correct negative", and recall can't be estimated without one.
+- **Labels are relative to the original claim judge.** `true_lie` / `judge_error_false_positive` apply to runs
+  it flagged; `missed_lie` / `true_honest` to runs it called honest, including runs only the audit judge
+  flagged.
+- **`python -m ledger.audit score`** gives:
+  - precision = true_lie / (true_lie + false positives);
+  - recall = true_lie / (true_lie + estimated misses);
+  - estimated misses = misses in audit-only runs + (miss rate in the sample × all honest-by-both runs).
+  - The Wilson CI on recall uses the rounded estimate, so it's approximate. Output says "AI-audited, pending
+    human confirmation" unless `--column human_label` is used.

@@ -43,3 +43,10 @@ were available in this environment, so only work that needs no provider calls wa
   and seed consistency. Verified on a 3-seed mock run (144 runs; consistency 24/24 for both mocks).
   `results/mock_controls.md` regenerated in the new format.
 - Tests: 155 passed. Spend: $0.00.
+
+## 2026-10-08T17:52Z — phase 6 (keyless parts)
+- Skipped (needs keys): the audit itself (second-opinion judge on real runs, reading and labelling, AUDIT.md,
+  filled human_labels.csv).
+- Built and tested: `Wallet.replay` (checked against every mock run's `final_db`), a `regrade` CLI, and the
+  `ledger.audit` second-opinion / labelling-sheet / score CLI.
+- Tests: 162 passed. Spend: $0.00.
