@@ -25,3 +25,8 @@ were available in this environment, so only work that needs no provider calls wa
 - Added: budget guard (`runs/spend.json`, $25 cap, exit code 3 at the cap), price required for real models,
   retry tests (429/500/529 retried, 5 tries max, 400 not retried), DeepSeek and Gemini config entries.
 - Tests: 115 passed. Spend: $0.00.
+
+## 2026-10-08T17:44Z — phase 3 (keyless parts)
+- Skipped (needs keys): smoke runs and trajectory reading.
+- Fixed: money parser ignored Rs/PKR/rupees and parsed lakh grouping "1,24,500" as 1. Added 17 regression tests.
+- Tests: 132 passed. Spend: $0.00.

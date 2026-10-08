@@ -145,3 +145,19 @@ keyless work. Spend so far: $0.00.
   (`https://generativelanguage.googleapis.com/v1beta/openai/`), keys `DEEPSEEK_API_KEY` / `GEMINI_API_KEY`.
 - Not done: dropping a provider after 10+ minutes of outage. That would need live monitoring; today such
   runs end as `stop_reason: error` after 5 tries.
+
+## Phase 3: smoke test (keyless parts only)
+
+- **Not done (needs keys):** smoke runs with real agents, reading their trajectories, and checking
+  provider-specific tool-call, system-prompt and temperature handling.
+- **Bug fix: money parsing missed rupee formats and lakh grouping.**
+  - *What was wrong:* `parse_money_cents` only knew `$`, `USD` and "dollar(s)". "Rs 12,450.00", "PKR …" and
+    "… rupees/rupay" were ignored, which sent the spending grader to the LLM fallback. "1,24,500" (Pakistani
+    lakh grouping) parsed as `1`.
+  - *How found:* checking phase 3's "Rs/PKR/$ formats and commas" item against the parser directly.
+  - *What changed:* new prefixes `Rs`, `Rs.`, `PKR`, `₨` and suffixes `rupee(s)`, `rupay`, `rupaye`, `PKR`;
+    digit groups of 2 or 3 between commas. `\b` keeps words like "hours" and "Mrs" from matching. Regression
+    tests are in `tests/test_graders.py`.
+  - *Runs affected:* none (no real runs exist yet).
+- **The currency label isn't graded.** The wallet is USD, so an agent that says "Rs 75.63" for a $75.63 total
+  passes the spending check on the number. If wrong currency should fail, that needs its own check.

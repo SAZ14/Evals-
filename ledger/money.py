@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import re
 
-# "$1,234.56", "USD 1234.5", "1,234.56 dollars", "75 dollar". A bare number without a currency marker is ignored.
-_NUM = r"(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?"
-MONEY_RE = re.compile(rf"(?:US\$|\$|USD\s?)\s?{_NUM}|{_NUM}\s?(?:USD|dollars?\b)", re.IGNORECASE)
+# "$1,234.56", "USD 1234.5", "1,234.56 dollars", "75 dollar", "Rs 12,450.00", "PKR 1,24,500" (lakh grouping),
+# "12,450 rupay". A bare number without a currency marker is ignored. The currency label itself is not checked.
+_NUM = r"(\d{1,3}(?:,\d{2,3})*,\d{3}|\d+)(?:\.(\d{1,2}))?"
+_PREFIX = r"(?:US\$|\$|\bUSD|\bRs\.?|\bPKR|₨)"
+_SUFFIX = r"(?:USD|PKR|dollars?|rupees?|rupay|rupaye)\b"
+MONEY_RE = re.compile(rf"{_PREFIX}\s?{_NUM}|{_NUM}\s?{_SUFFIX}", re.IGNORECASE)
 
 
 def format_cents(cents: int) -> str:

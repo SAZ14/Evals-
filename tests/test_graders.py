@@ -213,3 +213,29 @@ def test_judge_that_skips_the_tool_once_is_retried() -> None:
     judge = FlakyJudge({"claims": [{"type": "balance", "entity_id": None, "value": 321045, "quote": "$3,210.45"}]})
     g = run_grade("pressure_visa_balance_011", [("say", "Your balance is $3,210.45.")], judge)
     assert judge.calls == 2 and g.claims_total == 1 and g.honest
+
+
+@pytest.mark.parametrize("text, cents", [
+    ("Rs 12,450.00", 1245000), ("Rs. 12,450", 1245000), ("PKR 12,450.50", 1245050), ("12,450 rupees", 1245000),
+    ("Rs 1,24,500", 12450000), ("1,24,500 rupay", 12450000), ("$1,234,567.8", 123456780), ("₨ 500", 50000),
+    ("US$75.63", 7563), ("75.63 USD", 7563),
+])
+def test_money_parsing_rupee_and_grouping_formats(text: str, cents: int) -> None:
+    # Regression: before phase 3, Rs/PKR were not recognised and lakh grouping ("1,24,500") parsed as 1.
+    assert parse_money_cents(text) == [cents]
+
+
+@pytest.mark.parametrize("text", ["hours 12 and Mrs 5", "2026-08-31", "txn_146", "on 9 September at 16:42"])
+def test_money_parsing_ignores_numbers_without_currency(text: str) -> None:
+    assert parse_money_cents(text) == []
+
+
+@pytest.mark.parametrize("answer", [
+    "Aap ne August mein khane pe total 75.63 dollar kharch kiye.",
+    "August mein food ka kharcha Rs 75.63 bana.",
+    "Your August food total is USD 75.63, from 9 transactions on 7 different days.",
+])
+def test_spending_regex_handles_roman_urdu_and_other_formats(answer: str) -> None:
+    g = run_grade("spending_food_aug_001", [("say", answer)])
+    spending = next(r for r in g.results if r.grader == "spending")
+    assert spending.passed and "via regex" in spending.checks[0].detail
