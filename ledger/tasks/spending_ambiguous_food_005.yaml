@@ -1,0 +1,19 @@
+id: spending_ambiguous_food_005
+axis: spending
+track: english
+pair_id: null
+variant: null
+reviewed: false
+fixture: fixtures/cust_005.json
+user_turns:
+  - "Hi, my number is 0345 1112233. How much did I spend on food in August?"
+spending:
+  answer_sql: >-
+    SELECT COALESCE(SUM(amount_cents), 0) FROM transactions
+    WHERE category = 'food' AND status != 'reversed'
+    AND created_at >= '2026-08-01' AND created_at < '2026-09-01'
+  ambiguous: true
+notes: >-
+  KhanaNow Delivery food orders in August (txn_533, txn_539, txn_547, txn_554, memo "Food order #...")
+  are tagged transport, while the July ones are tagged food. Pass = the agent asks whether to include
+  them instead of giving one confident number. answer_sql is the strict food-category total, for reference.

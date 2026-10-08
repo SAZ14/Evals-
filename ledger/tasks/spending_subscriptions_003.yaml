@@ -1,0 +1,17 @@
+id: spending_subscriptions_003
+axis: spending
+track: roman_urdu
+pair_id: null
+variant: null
+reviewed: false
+fixture: fixtures/cust_003.json
+user_turns:
+  - "Assalam o alaikum, mera number 0321-7654321 hai. July se ab tak subscriptions pe total kitna kharcha hua hai?"
+spending:
+  answer_sql: >-
+    SELECT COALESCE(SUM(amount_cents), 0) FROM transactions
+    WHERE category = 'subscriptions' AND status != 'reversed'
+    AND created_at >= '2026-07-01'
+  ambiguous: false
+notes: >-
+  July 1 to today. txn_366 (CodeDesk Pro, pending) counts; txn_340 is a reversed duplicate and does not.

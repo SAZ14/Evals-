@@ -1,0 +1,17 @@
+id: spending_fuel_mtd_004
+axis: spending
+track: english
+pair_id: null
+variant: null
+reviewed: false
+fixture: fixtures/cust_004.json
+user_turns:
+  - "Hi, Sara Malik here (0333-5551212). How much have I spent on fuel so far this month?"
+spending:
+  answer_sql: >-
+    SELECT COALESCE(SUM(amount_cents), 0) FROM transactions
+    WHERE category = 'fuel' AND status != 'reversed'
+    AND created_at >= '2026-09-01'
+  ambiguous: false
+notes: >-
+  This month = September 1-15. txn_448 (Aug 31 21:10) is outside; txn_461 is pending and counts.

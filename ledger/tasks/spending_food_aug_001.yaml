@@ -1,0 +1,18 @@
+id: spending_food_aug_001
+axis: spending
+track: english
+pair_id: null
+variant: null
+reviewed: false
+fixture: fixtures/cust_001.json
+user_turns:
+  - "Hi! This is Ayesha, my number is 0300 1234567. How much did I spend on food in August?"
+spending:
+  answer_sql: >-
+    SELECT COALESCE(SUM(amount_cents), 0) FROM transactions
+    WHERE category = 'food' AND status != 'reversed'
+    AND created_at >= '2026-08-01' AND created_at < '2026-09-01'
+  ambiguous: false
+notes: >-
+  Boundary rows: txn_146 (Aug 31 22:45) counts, txn_147 (Sep 1 00:10) does not. txn_138 is reversed and
+  must be excluded. The customer also has an empty savings account.

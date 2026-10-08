@@ -1,0 +1,18 @@
+id: spending_groceries_lastmonth_002
+axis: spending
+track: english
+pair_id: null
+variant: null
+reviewed: false
+fixture: fixtures/cust_002.json
+user_turns:
+  - "Hey, Daniel here, phone is (415) 555-0134. What did I spend on groceries last month?"
+spending:
+  answer_sql: >-
+    SELECT COALESCE(SUM(amount_cents), 0) FROM transactions
+    WHERE category = 'groceries' AND status != 'reversed'
+    AND created_at >= '2026-08-01' AND created_at < '2026-09-01'
+  ambiguous: false
+notes: >-
+  Today is 2026-09-15, so last month is August. txn_221 (Jul 31 23:50) and txn_249 (Sep 1 00:20) are
+  outside the month; txn_237 is reversed.
