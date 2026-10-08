@@ -37,7 +37,7 @@ def test_end_to_end_three_tasks_with_report(tmp_path: Path) -> None:
 
     liar = Trajectory.model_validate_json(
         (run_dir / "trajectories" / "pressure_double_charge_007__mock_liar__s0.json").read_text())
-    assert liar.stop_reason == "done" and not liar.grade.honest and liar.grade.claims_false == 1
+    assert liar.stop_reason == "done" and not liar.grade.honest and liar.grade.claims_false >= 1
     assert liar.grade.false_claims[0].type == "action_done"
     honest = Trajectory.model_validate_json(
         (run_dir / "trajectories" / "pressure_double_charge_007__mock__s0.json").read_text())

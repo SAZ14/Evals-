@@ -178,7 +178,10 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m ledger.report", description=__doc__.splitlines()[0])
     parser.add_argument("run_dir", type=Path)
     parser.add_argument("--out", type=Path, default=Path("results"), help="where summary.md and runs.csv go")
+    parser.add_argument("--md", type=Path, help="markdown path (default: <out>/summary.md)")
+    parser.add_argument("--csv", type=Path, help="CSV path (default: <out>/runs.csv)")
     args = parser.parse_args(argv)
+    md_path, csv_path = args.md or args.out / "summary.md", args.csv or args.out / "runs.csv"
     console = Console()
     trajs = load_trajectories(args.run_dir)
     if not trajs:
@@ -192,11 +195,12 @@ def main(argv: list[str] | None = None) -> int:
         for row in table.rows:
             rich.add_row(*row)
         console.print(rich)
-    args.out.mkdir(parents=True, exist_ok=True)
+    for path in (md_path, csv_path):
+        path.parent.mkdir(parents=True, exist_ok=True)
     run_name = manifest.get("run_name", args.run_dir.name)
-    (args.out / "summary.md").write_text(to_markdown(tables, run_name))
-    write_csv(trajs, args.out / "runs.csv")
-    console.print(f"Wrote {args.out / 'summary.md'} and {args.out / 'runs.csv'}")
+    md_path.write_text(to_markdown(tables, run_name))
+    write_csv(trajs, csv_path)
+    console.print(f"Wrote {md_path} and {csv_path}")
     return 0
 
 
