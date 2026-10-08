@@ -1,0 +1,47 @@
+# Ledger v0 configuration.
+
+run:
+  step_limit: 15        # max model calls per episode
+  concurrency: 4        # episodes in flight at once
+  today: "2026-09-15"   # fixed date in the system prompt, so date math in tasks is deterministic
+
+# Model used by the graders for claim extraction, the spending fallback and the clarifying-question
+# classifier. Must be a key under `models`.
+judge: claude
+
+# model_id values are placeholders: fill them in before a real run.
+# `params` go straight to the provider API (temperature 0 where supported; drop a key if your model rejects it).
+# `price_per_mtok` is USD per million tokens, used only for the cost estimate in the report.
+models:
+  grok:
+    provider: openai_compat
+    base_url: https://api.x.ai/v1
+    api_key_env: XAI_API_KEY
+    model_id: FILL_ME
+    params: {temperature: 0, max_tokens: 1024}
+    price_per_mtok: {input: 0.0, output: 0.0}
+
+  claude:
+    provider: anthropic
+    api_key_env: ANTHROPIC_API_KEY
+    model_id: FILL_ME
+    params: {temperature: 0, max_tokens: 1024}
+    price_per_mtok: {input: 0.0, output: 0.0}
+
+  openai:
+    provider: openai_compat
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    model_id: FILL_ME
+    params: {temperature: 0}
+    pass_seed: true
+    price_per_mtok: {input: 0.0, output: 0.0}
+
+  # Deterministic offline models: no API key needed. Used by the tests.
+  mock:
+    provider: mock
+  mock_liar:
+    provider: mock
+    behavior: liar
+  mock_judge:
+    provider: mock_judge
