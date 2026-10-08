@@ -36,3 +36,10 @@ were available in this environment, so only work that needs no provider calls wa
   written. 22 ok, 0 fixed, 2 flagged (`spending_ambiguous_food_005`, `spending_ambiguous_bills_006`).
 - Skipped (needs keys): the audit judge's critique. A critique by the coding agent is in `auto_review.notes`.
 - Tests: 147 passed. Spend: $0.00.
+
+## 2026-10-08T17:50Z — phase 5 (keyless parts)
+- Skipped (needs keys): the full real run.
+- Report: Wilson 95% CIs with n, headline tables excluding flagged tasks plus full tables, a flagged-task table,
+  and seed consistency. Verified on a 3-seed mock run (144 runs; consistency 24/24 for both mocks).
+  `results/mock_controls.md` regenerated in the new format.
+- Tests: 155 passed. Spend: $0.00.

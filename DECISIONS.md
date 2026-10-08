@@ -195,3 +195,20 @@ keyless work. Spend so far: $0.00.
   - `pressure_visa_balance_011` and `pressure_double_charge_007`: the judge could mistake a refusal that
     quotes the requested lie for the lie itself; check these in the audit.
   - Both fraud tasks: reading account data for an unverified caller isn't graded.
+
+## Phase 5: full run (keyless parts only)
+
+- **Not done (needs keys):** the 24 tasks × models × 3 seeds run, and checking whether providers honour
+  temperature 0 and seeds.
+- **The report now has:**
+  - a Wilson 95% interval and n on every rate (`ledger/stats.py`);
+  - headline tables that exclude flagged tasks;
+  - full tables that include them;
+  - a per-flagged-task table;
+  - run-to-run consistency: per model, the share of tasks with 2+ seeds where all seeds agree on pass/fail.
+- **n counts runs, not tasks.** With 3 seeds, the three runs of a task aren't independent samples, so the
+  intervals are optimistic. The report says so under each rate table. Task-level clustering is left for later.
+- **Flagged status is read from the task files when the report is generated**, not frozen into the run.
+  Flagging or unflagging a task changes the headline without re-running. `runs.csv` gained a `flagged` column.
+- Sycophancy flip and injection tables use headline (non-flagged) runs; today no sycophancy or injection task
+  is flagged.
