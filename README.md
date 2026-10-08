@@ -33,13 +33,17 @@ uv run python -m ledger.report runs/<run_name>
 ```
 
 - `--tasks` takes `all`, or a comma list of task ids and/or axes (`spending,injection`).
+- A **budget guard** caps estimated real-API spend at `run.budget_usd` (default $25, token counts × config prices,
+  tracked in `runs/spend.json`). Real models must have `price_per_mtok` set. At the cap the runner stops
+  starting calls and exits with code 3; raising the cap and rerunning resumes.
 - Rerunning with the same `--run-name` resumes: finished `(task, model, seed)` runs are skipped.
 - Identical model requests are served from `.cache/`.
 - Each run writes `runs/<run_name>/trajectories/*.json` (messages, action log, final DB, usage, grade) and a
   `manifest.json` (git commit, config, model ids, timestamp).
-- The report prints tables and writes `results/summary.md` and `results/runs.csv`. It covers pass rate by axis
-  and by track (English / Roman Urdu), honesty rate, sycophancy flip rate, injection success rate, recent false
-  claims, and tokens and cost.
+- The report prints tables and writes `results/summary.md` and `results/runs.csv` (`--md` / `--csv` to rename).
+  It covers pass rate by axis and by track (English / Roman Urdu), honesty rate, sycophancy flip rate, injection
+  success rate, seed-to-seed consistency, recent false claims, and tokens and cost. Every rate shows n and a
+  Wilson 95% CI. Headline tables leave out tasks whose `auto_review` is `flagged`; full tables include them.
 
 ## Layout
 
@@ -47,13 +51,16 @@ uv run python -m ledger.report runs/<run_name>
 ledger/env/        schema.sql, wallet.py (DB + tools + action log), tools.py (JSON schemas), policy.md
 ledger/tasks/      *.yaml tasks, fixtures/*.json, loader.py (pydantic validation)
 ledger/models/     openai_compat.py (xAI, OpenAI, DeepSeek...), anthropic_client.py, mock.py
-ledger/runner/     agent_loop.py, run.py (CLI), cache.py
+ledger/runner/     agent_loop.py, run.py (CLI), cache.py, budget.py, regrade.py (CLI)
 ledger/graders/    state.py, spending.py, claims.py (honesty)
+ledger/tasks/review.py  deterministic task checks + REVIEW.md
 ledger/report.py   tables, summary.md, runs.csv
-ledger/config.yaml models, judge, concurrency, step limit, prices
+ledger/audit.py    claim-checker audit: second-opinion judge, labelling sheet, precision/recall
+ledger/config.yaml models, judge, concurrency, step limit, budget, prices
 ```
 
-`DECISIONS.md` records the judgement calls made while building v0.
+`DECISIONS.md` records the judgement calls made while building v0 and during the autonomous run.
+`RUNLOG.md` is the phase-by-phase log of that run.
 
 ## Task format
 
@@ -78,6 +85,9 @@ spending:                             # axis=spending only
   answer_sql: "SELECT COALESCE(SUM(amount_cents), 0) FROM transactions WHERE ..."
   ambiguous: false                    # true: pass = the agent asks a clarifying question
 notes: "Why the task is hard and what passing looks like."
+auto_review:                          # written by the automated review; humans own `reviewed`
+  status: ok                          # ok | fixed | flagged (flagged = left out of headline numbers)
+  notes: "What the checks and critique found."
 ```
 
 Action `args` match a subset of the call's arguments, loosely (numbers by value, strings case-insensitive,
@@ -91,7 +101,34 @@ leading `@` ignored). `{tool: send_transfer}` with no args forbids any transfer.
    verify them.
 3. Run `uv run pytest tests/test_tasks.py`. It validates every task and runs every `answer_sql`. Bad tasks
    fail loudly with the file name. The fixed task counts in that test need updating when you add tasks.
-4. Try it: `uv run python -m ledger.runner.run --models mock --judge mock_judge --tasks <id>`.
+4. Run `uv run python -m ledger.tasks.review --md REVIEW.md`. It checks ids, pairs, injection text, the
+   justification of forbidden actions, reachability, language and the caller's phone. Then add an `auto_review`.
+5. Try it: `uv run python -m ledger.runner.run --models mock --judge mock_judge --tasks <id>`.
+
+## Checking the graders
+
+- **Mock controls:** `--models mock,mock_liar` runs a positive control (passes every task, never lies) and a
+  negative one (wrong spending totals; claims refunds or transfers it never made). See
+  `results/mock_controls.md`.
+- **Re-grading** after a grader fix: `uv run python -m ledger.runner.regrade runs/<run_name>`. It replays each
+  run's tool calls to rebuild the final DB and keeps the old grade in `previous_grades`.
+- **Claim-judge audit:** `uv run python -m ledger.audit second-opinion runs/<run_name> --judge <other_model>`
+  re-extracts claims with a second judge and lists disagreements. It writes `audit/human_labels.csv` (every
+  flagged run plus a seeded sample of honest ones) for labelling. `uv run python -m ledger.audit score` then
+  estimates the claim judge's precision and recall.
+
+## Status
+
+**No real-model results yet.** The autonomous run had no API keys, so nothing has been sent to a provider and
+spend is $0.00. What exists is the harness, the mock controls (`results/mock_controls.md`) and the task review
+(`REVIEW.md`: 22 ok, 2 flagged). `FINDINGS.md` and `AUDIT.md` will come from the first real run.
+
+To finish phases 2–7:
+
+1. Make the provider keys available as environment variables (`XAI_API_KEY`, `ANTHROPIC_API_KEY`,
+   `OPENAI_API_KEY`, `DEEPSEEK_API_KEY`, `GEMINI_API_KEY`) and allow network access to those APIs.
+2. Pick model ids from each provider's list-models endpoint and set them, with prices, in `ledger/config.yaml`.
+3. Smoke test → full run (3 seeds) → `ledger.audit` → findings.
 
 ## Roadmap (not built yet)
 

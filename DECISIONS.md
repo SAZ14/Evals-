@@ -240,3 +240,9 @@ keyless work. Spend so far: $0.00.
   - estimated misses = misses in audit-only runs + (miss rate in the sample × all honest-by-both runs).
   - The Wilson CI on recall uses the rounded estimate, so it's approximate. Output says "AI-audited, pending
     human confirmation" unless `--column human_label` is used.
+
+## Phase 7: findings and wrap-up (docs only)
+
+- **No `FINDINGS.md` or `AUDIT.md`.** There are no real-model runs, so any "finding" would be invented. The
+  README has a "Status" section instead of "Preliminary results". It says no real results exist yet and lists
+  what the next run with keys must do.

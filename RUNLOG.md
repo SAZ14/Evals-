@@ -50,3 +50,13 @@ were available in this environment, so only work that needs no provider calls wa
 - Built and tested: `Wallet.replay` (checked against every mock run's `final_db`), a `regrade` CLI, and the
   `ledger.audit` second-opinion / labelling-sheet / score CLI.
 - Tests: 162 passed. Spend: $0.00.
+
+## 2026-10-08T17:53Z — phase 7 (docs only) and end of run
+- README: budget guard, report statistics, review/regrade/audit tools, `auto_review` in the task format, and a
+  Status section (no real-model results yet, steps to finish phases 2–7). No FINDINGS.md: no data.
+- Phases complete: 1. Partial without keys: 2, 3, 4 (audit-judge critique pending), 5 and 6 (tooling only),
+  7 (docs only).
+- Tests: 162 passed. Total spend: $0.00.
+- Blockers for the next run: provider keys must be set as environment variables, and api.x.ai,
+  api.openai.com and api.deepseek.com must be allowed by the environment's network policy (no connection from
+  this container).
