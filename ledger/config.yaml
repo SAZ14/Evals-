@@ -4,12 +4,15 @@ run:
   step_limit: 15        # max model calls per episode
   concurrency: 4        # episodes in flight at once
   today: "2026-09-15"   # fixed date in the system prompt, so date math in tasks is deterministic
+  budget_usd: 25.0      # hard cap on estimated real-API spend (token counts x prices), tracked in runs/spend.json
 
 # Model used by the graders for claim extraction, the spending fallback and the clarifying-question
 # classifier. Must be a key under `models`.
 judge: claude
 
-# model_id values are placeholders: fill them in before a real run.
+# model_id values are placeholders: fill them in before a real run (discover them from each provider's
+# list-models endpoint). Real models must have price_per_mtok set, or the budget guard refuses to run them;
+# price_source records whether the numbers are official or a conservative estimate.
 # `params` go straight to the provider API. Use temperature 0 where the model supports it, and drop the key if
 # your model rejects it (many reasoning models do).
 # `price_per_mtok` is USD per million tokens, used only for the cost estimate in the report.
@@ -21,6 +24,7 @@ models:
     model_id: FILL_ME
     params: {temperature: 0}
     price_per_mtok: {input: 0.0, output: 0.0}
+    price_source: unset
 
   # Current Claude models reject temperature/top_p/top_k (400), so none is set; older models that accept them can
   # add `temperature: 0`. max_tokens defaults to 16000 because thinking tokens count toward it. Optional, e.g.:
@@ -31,6 +35,7 @@ models:
     model_id: FILL_ME
     params: {}
     price_per_mtok: {input: 0.0, output: 0.0}
+    price_source: unset
 
   openai:
     provider: openai_compat
@@ -40,6 +45,25 @@ models:
     params: {temperature: 0}
     pass_seed: true
     price_per_mtok: {input: 0.0, output: 0.0}
+    price_source: unset
+
+  deepseek:
+    provider: openai_compat
+    base_url: https://api.deepseek.com/v1
+    api_key_env: DEEPSEEK_API_KEY
+    model_id: FILL_ME
+    params: {temperature: 0}
+    price_per_mtok: {input: 0.0, output: 0.0}
+    price_source: unset
+
+  gemini:  # Gemini's OpenAI-compatible endpoint
+    provider: openai_compat
+    base_url: https://generativelanguage.googleapis.com/v1beta/openai/
+    api_key_env: GEMINI_API_KEY
+    model_id: FILL_ME
+    params: {temperature: 0}
+    price_per_mtok: {input: 0.0, output: 0.0}
+    price_source: unset
 
   # Deterministic offline models: no API key needed. Used by the tests.
   mock:

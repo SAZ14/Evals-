@@ -21,6 +21,7 @@ from ledger.config import DEFAULT_CONFIG, Config, ConfigError, load_config, load
 from ledger.graders import grade
 from ledger.models import build_client
 from ledger.runner.agent_loop import run_episode
+from ledger.runner.budget import BudgetExceeded, BudgetGuard, GuardedClient
 from ledger.runner.cache import CachedClient, DiskCache
 from ledger.tasks.loader import Task, load_tasks
 
@@ -64,30 +65,45 @@ def write_manifest(run_dir: Path, run_name: str, config: Config, clients: dict[s
 
 
 async def run_all(config: Config, model_names: list[str], tasks: list[Task], seeds: int, run_name: str,
-                  judge_name: str, runs_dir: Path = Path("runs"), cache_dir: Path = Path(".cache")) -> tuple[Path, int]:
-    """Run every missing (task, model, seed). Returns the run dir and the number of grading errors."""
+                  judge_name: str, runs_dir: Path = Path("runs"),
+                  cache_dir: Path = Path(".cache")) -> tuple[Path, int, bool]:
+    """Run every missing (task, model, seed). Returns the run dir, the number of grading errors, and whether the
+    budget cap stopped the run."""
     run_dir = runs_dir / run_name
     (run_dir / "trajectories").mkdir(parents=True, exist_ok=True)
     cache = DiskCache(cache_dir)
-    agents = {m: CachedClient(build_client(m, config), cache) for m in model_names}
-    judge = CachedClient(build_client(judge_name, config), cache)
+    guard = BudgetGuard(runs_dir / "spend.json", config.run.budget_usd)
+
+    def client(name: str) -> CachedClient:  # cache outermost: hits cost nothing and skip the guard
+        return CachedClient(GuardedClient(build_client(name, config), guard, config.models[name].price_per_mtok),
+                            cache)
+
+    agents = {m: client(m) for m in model_names}
+    judge = client(judge_name)
     write_manifest(run_dir, run_name, config, agents, judge, tasks, seeds)
 
     jobs = [(t, m, s) for t in tasks for m in model_names for s in range(seeds)]
     todo = [(t, m, s) for t, m, s in jobs if not run_file(run_dir, t.id, m, s).exists()]
     console.print(f"[bold]{run_name}[/]: {len(jobs)} runs, {len(jobs) - len(todo)} already done, {len(todo)} to go")
     semaphore = asyncio.Semaphore(config.run.concurrency)
-    errors = 0
+    errors, budget_hit = 0, False
     today = config.run.today
 
     async def one(task: Task, model: str, seed: int) -> None:
-        nonlocal errors
+        nonlocal errors, budget_hit
         async with semaphore:
+            if budget_hit:
+                return
             wallet = task.wallet(today)
-            traj = await run_episode(task, agents[model], wallet, today=today, step_limit=config.run.step_limit,
-                                     seed=seed, run_name=run_name)
             try:
+                traj = await run_episode(task, agents[model], wallet, today=today, step_limit=config.run.step_limit,
+                                         seed=seed, run_name=run_name)
                 traj.grade = await grade(task, traj, task.wallet(today), wallet, judge)
+            except BudgetExceeded as exc:  # not written: resumes once there is budget
+                if not budget_hit:
+                    console.print(f"[red]BUDGET[/] {exc}. Stopping new runs.")
+                budget_hit = True
+                return
             except Exception:  # noqa: BLE001 - logged loudly; the run is retried on resume
                 errors += 1
                 tb = traceback.format_exc()
@@ -105,7 +121,8 @@ async def run_all(config: Config, model_names: list[str], tasks: list[Task], see
                       f"  false_claims={g.claims_false}/{g.claims_total}  stop={traj.stop_reason}")
 
     await asyncio.gather(*(one(*job) for job in todo))
-    return run_dir, errors
+    console.print(f"Estimated spend so far: ${guard.spent:.4f} of ${guard.cap:.2f} ({runs_dir / 'spend.json'})")
+    return run_dir, errors, budget_hit
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -126,15 +143,17 @@ def main(argv: list[str] | None = None) -> int:
     tasks = load_tasks(args.tasks)
     run_name = args.run_name or f"{datetime.now().date().isoformat()}_{'-'.join(models)}"
     try:
-        run_dir, errors = asyncio.run(run_all(config, models, tasks, args.seeds, run_name, args.judge or config.judge,
-                                              args.runs_dir, args.cache_dir))
+        run_dir, errors, budget_hit = asyncio.run(run_all(config, models, tasks, args.seeds, run_name,
+                                                          args.judge or config.judge, args.runs_dir, args.cache_dir))
     except ConfigError as exc:
         console.print(f"[red]Config error:[/] {exc}")
         return 2
     if errors:
         console.print(f"[red]{errors} run(s) failed grading; see {run_dir / 'errors.log'}. Rerun to retry them.[/]")
+    if budget_hit:
+        console.print("[red]Budget cap reached; unfinished runs were skipped (raise run.budget_usd to resume).[/]")
     console.print(f"\nReport: uv run python -m ledger.report {run_dir}")
-    return 1 if errors else 0
+    return 3 if budget_hit else 1 if errors else 0
 
 
 if __name__ == "__main__":

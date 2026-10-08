@@ -22,6 +22,9 @@ def build_client(name: str, config: Config) -> ModelClient:
         return MockJudge(name)
     if not mc.model_id or "FILL_ME" in mc.model_id:
         raise ConfigError(f"models.{name}.model_id is a placeholder; set it in ledger/config.yaml")
+    if mc.price_per_mtok.input <= 0 or mc.price_per_mtok.output <= 0:
+        raise ConfigError(f"models.{name}.price_per_mtok is not set; the budget guard needs it (use a conservative "
+                          "estimate and price_source: estimate if no official price is available)")
     if not mc.api_key_env or not os.environ.get(mc.api_key_env):
         raise ConfigError(f"models.{name}: environment variable {mc.api_key_env or '(api_key_env unset)'} "
                           "is not set; add it to .env")

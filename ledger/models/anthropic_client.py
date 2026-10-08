@@ -5,7 +5,7 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from ledger.models.base import Message, ModelClient, ModelResponse, ToolCall, Usage
+from ledger.models.base import MAX_RETRIES, Message, ModelClient, ModelResponse, ToolCall, Usage
 
 # Thinking is on by default on current models and counts toward max_tokens, so leave generous room.
 DEFAULT_MAX_TOKENS = 16000
@@ -46,11 +46,12 @@ class AnthropicClient(ModelClient):
     provider = "anthropic"
 
     def __init__(self, name: str, model_id: str, params: dict[str, Any] | None, *, api_key: str,
-                 pass_seed: bool = False) -> None:
+                 pass_seed: bool = False, base_url: str | None = None, http_client: Any = None) -> None:
         super().__init__(name, model_id, params, pass_seed)
         from anthropic import AsyncAnthropic
 
-        self.client = AsyncAnthropic(api_key=api_key, max_retries=4, timeout=600)
+        self.client = AsyncAnthropic(api_key=api_key, base_url=base_url, max_retries=MAX_RETRIES, timeout=600,
+                                     http_client=http_client)
         # Some current models reject forced tool_choice; we switch to "auto" the first time one does.
         self.forced_tool_choice = True
 

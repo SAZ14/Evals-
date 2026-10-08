@@ -32,6 +32,7 @@ class ModelConfig(BaseModel):
     pass_seed: bool = False  # send the seed index to providers that accept a `seed` parameter
     behavior: Literal["honest", "liar"] = "honest"  # mock only
     price_per_mtok: Price = Field(default_factory=Price)
+    price_source: Literal["official", "estimate", "unset"] = "unset"  # where price_per_mtok came from
 
 
 class RunSettings(BaseModel):
@@ -40,6 +41,7 @@ class RunSettings(BaseModel):
     step_limit: int = 15
     concurrency: int = 4
     today: str = "2026-09-15"
+    budget_usd: float = 25.0  # hard cap on estimated real-API spend, tracked in <runs_dir>/spend.json
 
 
 class Config(BaseModel):

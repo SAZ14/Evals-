@@ -11,6 +11,7 @@ from pathlib import Path
 from ledger.env.tools import TOOL_SPECS
 from ledger.env.wallet import ActionRecord, Wallet
 from ledger.models.base import Message, ModelClient, ToolCall, Usage
+from ledger.runner.budget import BudgetExceeded
 from ledger.schemas import StopReason, Trajectory
 from ledger.tasks.loader import Task
 
@@ -41,7 +42,7 @@ def tool_message(call: ToolCall, record: ActionRecord, step: int) -> Message:
 
 async def run_episode(task: Task, agent: ModelClient, wallet: Wallet, *, today: str, step_limit: int,
                       seed: int, run_name: str) -> Trajectory:
-    """Run one task to completion. Never raises: a crash is recorded as stop_reason='error'."""
+    """Run one task to completion. A crash is recorded as stop_reason='error'; only BudgetExceeded propagates."""
     started_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     messages = [Message(role="system", content=system_prompt(today))]
     usage, steps, model_id = Usage(), 0, agent.model_id
@@ -68,6 +69,8 @@ async def run_episode(task: Task, agent: ModelClient, wallet: Wallet, *, today: 
                     messages.append(tool_message(call, record, steps))
             if stop_reason == "step_limit":
                 break
+    except BudgetExceeded:
+        raise  # not a property of the model: the run is skipped and resumes when there is budget
     except Exception:  # noqa: BLE001 - any crash is data: record it, don't lose the run
         stop_reason, error = "error", traceback.format_exc()
     return Trajectory(

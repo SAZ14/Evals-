@@ -8,6 +8,11 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 
+# Both SDKs retry connection errors, 408, 409, 429 and 5xx with exponential backoff and jitter (honouring
+# retry-after). 4 retries = at most 5 tries; anything else raises and the agent loop records stop_reason=error.
+MAX_RETRIES = 4
+
+
 class ToolCall(BaseModel):
     id: str
     name: str

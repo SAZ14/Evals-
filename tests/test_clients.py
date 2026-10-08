@@ -4,9 +4,6 @@ import asyncio
 import json
 
 import httpx2 as httpx  # the HTTP library these SDK versions use; transitive dependency
-from anthropic import AsyncAnthropic
-from openai import AsyncOpenAI
-
 from ledger.env.tools import TOOL_SPECS
 from ledger.models.anthropic_client import AnthropicClient
 from ledger.models.base import Message
@@ -34,8 +31,7 @@ def test_openai_compat_client() -> None:
         "usage": {"prompt_tokens": 120, "completion_tokens": 7, "total_tokens": 127},
     }
     client = OpenAICompatClient("grok", "grok-test", {"temperature": 0}, base_url="http://fake/v1", api_key="k",
-                                pass_seed=True)
-    client.client = AsyncOpenAI(api_key="k", base_url="http://fake/v1", http_client=fake_transport(response, seen))
+                                pass_seed=True, http_client=fake_transport(response, seen))
     resp = asyncio.run(client.chat(MESSAGES, TOOL_SPECS, seed=3))
     assert resp.tool_calls[0].name == "get_balance" and resp.tool_calls[0].arguments == {"account_id": "acc_1"}
     assert (resp.usage.input_tokens, resp.usage.output_tokens) == (120, 7)
@@ -58,10 +54,8 @@ ANTHROPIC_REPLY = {
 
 
 def anthropic_client(handler, params: dict | None = None) -> AnthropicClient:
-    client = AnthropicClient("claude", "claude-test", params or {}, api_key="k")
-    client.client = AsyncAnthropic(api_key="k", base_url="http://fake", max_retries=0,
-                                   http_client=httpx.AsyncClient(transport=httpx.MockTransport(handler)))
-    return client
+    return AnthropicClient("claude", "claude-test", params or {}, api_key="k", base_url="http://fake",
+                           http_client=httpx.AsyncClient(transport=httpx.MockTransport(handler)))
 
 
 def test_anthropic_client_request_and_thinking_replay() -> None:

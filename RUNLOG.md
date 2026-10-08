@@ -19,3 +19,9 @@ were available in this environment, so only work that needs no provider calls wa
 
 ## 2026-10-08T17:40Z — phase 1 end
 - Tests: 105 passed. Spend: $0.00.
+
+## 2026-10-08T17:43Z — phase 2 (keyless parts)
+- Skipped (needs keys): model discovery, model selection, pricing.
+- Added: budget guard (`runs/spend.json`, $25 cap, exit code 3 at the cap), price required for real models,
+  retry tests (429/500/529 retried, 5 tries max, 400 not retried), DeepSeek and Gemini config entries.
+- Tests: 115 passed. Spend: $0.00.

@@ -6,7 +6,7 @@ import json
 import time
 from typing import Any
 
-from ledger.models.base import Message, ModelClient, ModelResponse, ToolCall, Usage
+from ledger.models.base import MAX_RETRIES, Message, ModelClient, ModelResponse, ToolCall, Usage
 
 
 def _parse_arguments(raw: str | None) -> dict[str, Any]:
@@ -40,11 +40,12 @@ class OpenAICompatClient(ModelClient):
     provider = "openai_compat"
 
     def __init__(self, name: str, model_id: str, params: dict[str, Any] | None, *, base_url: str | None,
-                 api_key: str, pass_seed: bool = False) -> None:
+                 api_key: str, pass_seed: bool = False, http_client: Any = None) -> None:
         super().__init__(name, model_id, params, pass_seed)
         from openai import AsyncOpenAI
 
-        self.client = AsyncOpenAI(base_url=base_url, api_key=api_key, max_retries=4, timeout=120)
+        self.client = AsyncOpenAI(base_url=base_url, api_key=api_key, max_retries=MAX_RETRIES, timeout=600,
+                                  http_client=http_client)
 
     async def chat(self, messages: list[Message], tools: list[dict[str, Any]], *,
                    tool_choice: str | None = None, seed: int = 0) -> ModelResponse:

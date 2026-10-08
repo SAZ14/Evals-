@@ -121,3 +121,27 @@ keyless work. Spend so far: $0.00.
   a false claim too. On ambiguous tasks such claims are unverifiable by design (there's no single true total),
   which is why the liar shows 2/6 "honest" on spending in `results/mock_controls.md` while failing all 6.
 - `ledger.report` gained `--md` / `--csv` to name the output files.
+
+## Phase 2: real model configuration (keyless parts only)
+
+- **Not done (needs keys):** model discovery through the list-models endpoints, model choice, prices. The
+  `model_id` placeholders stay. No prices were fetched: without a chosen model there's nothing to price.
+- **Budget guard** (`ledger/runner/budget.py`): every uncached call reserves a pessimistic estimate (prompt
+  chars / 3 input tokens + 4,000 output tokens, at config prices) and is refused if spent + reserved +
+  estimate would pass `run.budget_usd` (default $25). Actual cost from the returned token counts goes to
+  `<runs_dir>/spend.json`, cumulative across runs. A call that is allowed can overshoot by its own actual cost;
+  no new call starts after that.
+- A budget stop is not a model result. The run isn't written, so it resumes when the cap is raised, the
+  remaining jobs are skipped, and the runner exits with code 3. Cache hits cost nothing and bypass the guard.
+- **Real models now require a non-zero price**, or the runner refuses to start (`ConfigError`), so the guard
+  can never silently count $0. `price_source` (`official` / `estimate` / `unset`) records where a price came
+  from.
+- **Retries use the SDKs' built-in backoff**: `max_retries=4` (5 tries) for connection errors, 408, 409, 429
+  and 5xx, exponential with jitter, honouring `retry-after`. The constant is `MAX_RETRIES` in
+  `ledger/models/base.py`. Other errors raise and the run is recorded as `stop_reason: error`. Tests fake 429,
+  500 and 529 responses at the HTTP layer.
+- Client timeouts went from 120 s to 600 s, since thinking models can take minutes on one call.
+- Added OpenAI-compatible config entries for DeepSeek (`https://api.deepseek.com/v1`) and Gemini
+  (`https://generativelanguage.googleapis.com/v1beta/openai/`), keys `DEEPSEEK_API_KEY` / `GEMINI_API_KEY`.
+- Not done: dropping a provider after 10+ minutes of outage. That would need live monitoring; today such
+  runs end as `stop_reason: error` after 5 tries.
