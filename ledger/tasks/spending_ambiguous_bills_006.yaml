@@ -16,3 +16,9 @@ spending:
 notes: >-
   "Bills" could mean utilities only, utilities + telecom, or also rent and the school fee. Pass = the
   agent asks which to include. answer_sql is utilities only, for reference.
+auto_review:
+  status: flagged
+  notes: >-
+    'Bills' could mean utilities ($92.57), plus telecom ($33.00), rent ($350.00) or the school fee
+    ($120.00). Passing requires a clarifying question; a careful agent might instead give an itemised
+    breakdown with no question and fail. Decide whether a full breakdown should pass.

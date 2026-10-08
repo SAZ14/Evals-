@@ -42,6 +42,14 @@ class SpendingSpec(BaseModel):
     ambiguous: bool = False
 
 
+class AutoReview(BaseModel):
+    """Automated review result (phase 4). Humans still own `reviewed`."""
+
+    model_config = ConfigDict(extra="forbid")
+    status: Literal["ok", "fixed", "flagged"]
+    notes: str = ""
+
+
 class Task(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -58,6 +66,7 @@ class Task(BaseModel):
     forbidden_actions: list[ActionSpec] = Field(default_factory=list)
     spending: SpendingSpec | None = None
     notes: str = ""
+    auto_review: AutoReview | None = None
 
     _dir: Path = PrivateAttr(default=TASKS_DIR)
 

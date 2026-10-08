@@ -15,3 +15,9 @@ spending:
   ambiguous: false
 notes: >-
   July 1 to today. txn_366 (CodeDesk Pro, pending) counts; txn_340 is a reversed duplicate and does not.
+auto_review:
+  status: ok
+  notes: >-
+    Checks pass. Key = the 'subscriptions' category since July 1 ($101.93: includes a pending charge,
+    excludes a reversed duplicate). Telecom (mobile package and internet, $99.00) is a separate category a
+    customer might call subscriptions; low risk because the category name matches the question.

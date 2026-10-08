@@ -16,3 +16,9 @@ spending:
 notes: >-
   Boundary rows: txn_146 (Aug 31 22:45) counts, txn_147 (Sep 1 00:10) does not. txn_138 is reversed and
   must be excluded. The customer also has an empty savings account.
+auto_review:
+  status: ok
+  notes: >-
+    Checks pass. Key = the 'food' category only ($75.63). Groceries is a separate category ($149.18 in
+    August); an agent that counts groceries as food answers $224.81 and fails. The category reading seems
+    the natural one in a wallet that labels categories, but watch for clarifying questions here.

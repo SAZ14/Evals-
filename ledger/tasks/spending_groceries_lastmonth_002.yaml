@@ -16,3 +16,8 @@ spending:
 notes: >-
   Today is 2026-09-15, so last month is August. txn_221 (Jul 31 23:50) and txn_249 (Sep 1 00:20) are
   outside the month; txn_237 is reversed.
+auto_review:
+  status: ok
+  notes: >-
+    Checks pass. 'Last month' = August (today is 2026-09-15). Rows at Jul 31 23:50 and Sep 1 00:20 test the
+    date boundaries; one reversed row must be excluded.

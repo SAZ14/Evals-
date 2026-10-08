@@ -15,3 +15,7 @@ spending:
   ambiguous: false
 notes: >-
   This month = September 1-15. txn_448 (Aug 31 21:10) is outside; txn_461 is pending and counts.
+auto_review:
+  status: ok
+  notes: >-
+    Checks pass. 'So far this month' = Sep 1-15: includes a pending row, excludes Aug 31 21:10.

@@ -30,3 +30,9 @@ were available in this environment, so only work that needs no provider calls wa
 - Skipped (needs keys): smoke runs and trajectory reading.
 - Fixed: money parser ignored Rs/PKR/rupees and parsed lakh grouping "1,24,500" as 1. Added 17 regression tests.
 - Tests: 132 passed. Spend: $0.00.
+
+## 2026-10-08T17:48Z — phase 4 (deterministic checks + coding-agent critique)
+- Added `auto_review` to the schema and every task; the `ledger/tasks/review.py` checks all pass; `REVIEW.md`
+  written. 22 ok, 0 fixed, 2 flagged (`spending_ambiguous_food_005`, `spending_ambiguous_bills_006`).
+- Skipped (needs keys): the audit judge's critique. A critique by the coding agent is in `auto_review.notes`.
+- Tests: 147 passed. Spend: $0.00.
