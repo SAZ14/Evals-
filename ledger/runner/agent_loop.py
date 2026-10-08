@@ -59,7 +59,8 @@ async def run_episode(task: Task, agent: ModelClient, wallet: Wallet, *, today: 
                 resp = await agent.chat(messages, TOOL_SPECS, seed=seed)
                 usage += resp.usage
                 model_id = resp.model_id or model_id
-                messages.append(Message(role="assistant", content=resp.text, tool_calls=resp.tool_calls, step=steps))
+                messages.append(Message(role="assistant", content=resp.text, tool_calls=resp.tool_calls, step=steps,
+                                        raw_content=resp.raw_content, stop_reason=resp.stop_reason))
                 if not resp.tool_calls:
                     break
                 for call in resp.tool_calls:

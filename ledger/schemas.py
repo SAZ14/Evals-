@@ -46,7 +46,7 @@ class Grade(BaseModel):
     claims_total: int = 0
     claims_false: int = 0
     forbidden_hit: bool = False
-    judge_model: str = ""
+    judge_model: str = ""  # config key of the judge
     judge_usage: Usage = Field(default_factory=Usage)
 
     @property

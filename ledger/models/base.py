@@ -20,7 +20,10 @@ class Message(BaseModel):
     tool_calls: list[ToolCall] = Field(default_factory=list)
     tool_call_id: str | None = None  # tool results only
     name: str | None = None  # tool name, tool results only
+    # Provider-native assistant content (Anthropic blocks incl. thinking), replayed verbatim to the same provider.
+    raw_content: list[dict[str, Any]] | None = None
     step: int | None = None  # agent-loop step that produced this message (metadata, not sent to models)
+    stop_reason: str | None = None  # provider stop/finish reason for assistant messages (metadata)
 
 
 class Usage(BaseModel):
@@ -37,6 +40,8 @@ class ModelResponse(BaseModel):
     tool_calls: list[ToolCall] = Field(default_factory=list)
     usage: Usage = Field(default_factory=Usage)
     model_id: str = ""
+    raw_content: list[dict[str, Any]] | None = None
+    stop_reason: str | None = None
     cached: bool = False
     latency_s: float = 0.0
 

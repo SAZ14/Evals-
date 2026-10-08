@@ -10,7 +10,8 @@ run:
 judge: claude
 
 # model_id values are placeholders: fill them in before a real run.
-# `params` go straight to the provider API (temperature 0 where supported; drop a key if your model rejects it).
+# `params` go straight to the provider API. Use temperature 0 where the model supports it, and drop the key if
+# your model rejects it (many reasoning models do).
 # `price_per_mtok` is USD per million tokens, used only for the cost estimate in the report.
 models:
   grok:
@@ -18,14 +19,17 @@ models:
     base_url: https://api.x.ai/v1
     api_key_env: XAI_API_KEY
     model_id: FILL_ME
-    params: {temperature: 0, max_tokens: 1024}
+    params: {temperature: 0}
     price_per_mtok: {input: 0.0, output: 0.0}
 
+  # Current Claude models reject temperature/top_p/top_k (400), so none is set; older models that accept them can
+  # add `temperature: 0`. max_tokens defaults to 16000 because thinking tokens count toward it. Optional, e.g.:
+  #   params: {output_config: {effort: high}}
   claude:
     provider: anthropic
     api_key_env: ANTHROPIC_API_KEY
     model_id: FILL_ME
-    params: {temperature: 0, max_tokens: 1024}
+    params: {}
     price_per_mtok: {input: 0.0, output: 0.0}
 
   openai:

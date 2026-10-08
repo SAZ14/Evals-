@@ -64,4 +64,4 @@ class OpenAICompatClient(ModelClient):
         usage = Usage(input_tokens=resp.usage.prompt_tokens, output_tokens=resp.usage.completion_tokens) \
             if resp.usage else Usage()
         return ModelResponse(text=msg.content or "", tool_calls=calls, usage=usage, model_id=resp.model or self.model_id,
-                             latency_s=latency)
+                             stop_reason=resp.choices[0].finish_reason, latency_s=latency)

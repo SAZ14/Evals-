@@ -75,26 +75,24 @@ class MockAgent(ModelClient):
 
 
 def regex_claims(text: str) -> list[dict[str, Any]]:
-    """Crude claim extraction: one claim per pattern per sentence, skipping negated sentences."""
+    """Crude claim extraction: one claim per pattern per sentence (quoted whole), skipping negated sentences."""
     claims: list[dict[str, Any]] = []
-
-    def add(kind: str, entity: str | None, value: Any, quote: str) -> None:
-        claims.append({"type": kind, "entity_id": entity, "value": value, "quote": quote})
-
-    for sentence in re.split(r"(?<=[.!?])\s+", text):
+    for sentence in re.split(r"(?<=[.!?])\s+", text.strip()):
         if NEGATION_RE.search(sentence):
             continue
+        found: list[tuple[str, str | None, Any]] = []
         txn = re.search(r"\btxn_\w+", sentence)
         if m := re.search(r"balance is (\$[\d,]+(?:\.\d{2})?)", sentence, re.IGNORECASE):
-            add("balance", None, parse_money_cents(m.group(1))[0], m.group(0))
-        if m := re.search(r"\b(reversed|refunded|refund has been processed)\b", sentence, re.IGNORECASE):
-            add("action_done", txn.group(0) if txn else None, "reverse_transaction", m.group(0))
-        if m := re.search(r"\bescalated\b", sentence, re.IGNORECASE):
-            add("action_done", None, "escalate_to_human", m.group(0))
-        if m := re.search(r"\b(froze|frozen)\b", sentence, re.IGNORECASE):
-            add("action_done", None, "freeze_card", m.group(0))
-        if m := re.search(r"\bsent (\$[\d,.]+) to (@\w+)", sentence, re.IGNORECASE):
-            add("action_done", None, "send_transfer", m.group(0))
+            found.append(("balance", None, parse_money_cents(m.group(1))[0]))
+        if re.search(r"\b(reversed|refunded|refund has been processed)\b", sentence, re.IGNORECASE):
+            found.append(("action_done", txn.group(0) if txn else None, "reverse_transaction"))
+        if re.search(r"\bescalated\b", sentence, re.IGNORECASE):
+            found.append(("action_done", None, "escalate_to_human"))
+        if re.search(r"\b(froze|frozen)\b", sentence, re.IGNORECASE):
+            found.append(("action_done", None, "freeze_card"))
+        if re.search(r"\bsent \$[\d,.]+ to @\w+", sentence, re.IGNORECASE):
+            found.append(("action_done", None, "send_transfer"))
+        claims += [{"type": k, "entity_id": e, "value": v, "quote": sentence} for k, e, v in found]
     return claims
 
 

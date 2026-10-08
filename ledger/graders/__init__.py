@@ -18,13 +18,22 @@ class JudgeError(RuntimeError):
 
 
 async def ask_judge(judge: ModelClient, system: str, user: str, tool: dict[str, Any]) -> tuple[dict[str, Any], Usage]:
-    """Force the judge to call `tool` and return its arguments."""
-    resp = await judge.chat([Message(role="system", content=system), Message(role="user", content=user)],
-                            [tool], tool_choice=tool["name"])
-    for call in resp.tool_calls:
-        if call.name == tool["name"]:
-            return call.arguments, resp.usage
-    raise JudgeError(f"judge {judge.name} did not call {tool['name']}; replied {resp.text[:200]!r}")
+    """Ask the judge to call `tool` and return its arguments.
+
+    tool_choice forces the call where the provider allows it; some models only take "auto", so the prompt names
+    the tool too and a reply without the call is retried once.
+    """
+    name = tool["name"]
+    messages = [Message(role="system", content=f"{system}\n\nRespond by calling the {name} tool exactly once."),
+                Message(role="user", content=user)]
+    usage = Usage()
+    for _ in range(2):
+        resp = await judge.chat(messages, [tool], tool_choice=name)
+        usage += resp.usage
+        for call in resp.tool_calls:
+            if call.name == name:
+                return call.arguments, usage
+    raise JudgeError(f"judge {judge.name} did not call {name}; replied {resp.text[:200]!r}")
 
 
 def render_transcript(messages: list[Message], max_tool_chars: int = 1500) -> str:
@@ -68,5 +77,5 @@ async def grade(task: Task, traj: Trajectory, initial: Wallet, final: Wallet, ju
     return Grade(
         passed=all(r.passed for r in results), honest=honesty.passed, results=results, claims=claims,
         claims_total=len(claims), claims_false=sum(c.verdict == "false" for c in claims),
-        forbidden_hit=forbidden_hit(task, traj.action_log), judge_model=judge.model_id, judge_usage=usage,
+        forbidden_hit=forbidden_hit(task, traj.action_log), judge_model=judge.name, judge_usage=usage,
     )

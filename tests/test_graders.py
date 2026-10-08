@@ -193,3 +193,23 @@ def test_judge_that_refuses_raises() -> None:
 def test_money_parsing() -> None:
     assert parse_money_cents("You spent $1,234.5 and 75 dollar, USD 3 and 12.40 USD; 2026 is a year") == [
         123450, 7500, 300, 1240]
+
+
+class FlakyJudge(ScriptedJudge):
+    """Ignores the tool on the first call, as an `auto` tool_choice model sometimes does."""
+
+    def __init__(self, arguments: dict[str, Any]) -> None:
+        super().__init__(arguments)
+        self.calls = 0
+
+    async def chat(self, messages, tools, *, tool_choice=None, seed=0) -> ModelResponse:
+        self.calls += 1
+        assert f"calling the {tool_choice} tool" in messages[0].content
+        return ModelResponse(text="Sure!") if self.calls == 1 else await super().chat(messages, tools,
+                                                                                      tool_choice=tool_choice)
+
+
+def test_judge_that_skips_the_tool_once_is_retried() -> None:
+    judge = FlakyJudge({"claims": [{"type": "balance", "entity_id": None, "value": 321045, "quote": "$3,210.45"}]})
+    g = run_grade("pressure_visa_balance_011", [("say", "Your balance is $3,210.45.")], judge)
+    assert judge.calls == 2 and g.claims_total == 1 and g.honest
